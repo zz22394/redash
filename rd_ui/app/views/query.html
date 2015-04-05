@@ -27,78 +27,74 @@
       <div class="flex-container" style="flex: 1;">
         <sidebar>
           <p>
-            <p>
-              <span class="glyphicon glyphicon-user"></span>
-              <span class="text-muted">Created By </span>
-              <strong>{{query.user.name}}</strong>
-            </p>
-            <p ng-if="query.user.id != query.last_modified_by.id">
-                <span class="glyphicon glyphicon-user"></span>
-                <span class="text-muted">Last Modified By </span>
-                <strong>{{query.last_modified_by.name}}</strong>
-            </p>
-            <p>
-                <span class="glyphicon glyphicon-time"></span>
-                <span class="text-muted">Last update </span>
-                <strong>
-                    <rd-time-ago value="queryResult.query_result.retrieved_at"></rd-time-ago>
-                </strong>
-            </p>
-            <p>
-                <span class="glyphicon glyphicon-play"></span>
-                <span class="text-muted">Runtime </span>
-                <strong ng-show="!queryExecuting">{{queryResult.getRuntime() | durationHumanize}}</strong>
-                <span ng-show="queryExecuting">Running&hellip;</span>
-            </p>
-            <p>
-                <span class="glyphicon glyphicon-align-justify"></span>
-                <span class="text-muted">Rows </span><strong>{{queryResult.getData().length}}</strong>
-            </p>
-            <p>
-                <span class="glyphicon glyphicon-refresh"></span>
-                <span class="text-muted">Refresh Interval</span>
-                <query-refresh-select></query-refresh-select>
-            </p>
+            <button class="btn btn-xs btn-default rd-hidden-xs" ng-click="duplicateQuery()">
+                <span class="glyphicon glyphicon-share-alt"></span> Fork
+            </button>
 
-            <p>
-                <span class="glyphicon glyphicon-hdd"></span>
-                <span class="text-muted">Data Source</span>
-                <select ng-disabled="!isQueryOwner" ng-model="query.data_source_id" ng-change="updateDataSource()" ng-options="ds.id as ds.name for ds in dataSources"></select>
-            </p>
+            <button class="btn btn-default btn-xs" ng-show="query.id != undefined" ng-click="showApiKey()">
+                <i class="fa fa-key" title="Show API Key"></i> API key
+            </button>
 
-            <p>
-                <a class="btn btn-primary btn-sm" ng-disabled="queryExecuting || !queryResult.getData()" query-result-link target="_self">
-                    <span class="glyphicon glyphicon-cloud-download"></span>
-                    <span class="rd-hidden-xs">Download Dataset</span>
-                </a>
+            <a class="btn btn-default btn-xs" ng-disabled="queryExecuting" data-toggle="modal" data-target="#archive-confirmation-modal"
+               ng-show="!query.is_archived && query.id != undefined && (isQueryOwner || currentUser.hasPermission('admin'))">
+                <i class="fa fa-archive" title="Archive Query"></i> Archive
+            </a>
 
-                <a class="btn btn-warning btn-sm" ng-disabled="queryExecuting" data-toggle="modal" data-target="#archive-confirmation-modal"
-                   ng-show="!query.is_archived && query.id != undefined && (isQueryOwner || currentUser.hasPermission('admin'))">
-                    <i class="fa fa-archive" title="Archive Query"></i>
-                </a>
-
-                <button class="btn btn-default btn-sm" ng-show="query.id != undefined" ng-click="showApiKey()">
-                    <i class="fa fa-key" title="Show API Key"></i>
-                </button>
-
-                <div class="modal fade" id="archive-confirmation-modal" tabindex="-1" role="dialog" aria-labelledby="archiveConfirmationModal" aria-hidden="true">
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h4 class="modal-title">Query Archive</h4>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to archive this query? <br/>
-                        All dashboard widgets created with its visualizations will be deleted.
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
-                        <button type="button" class="btn btn-primary" ng-click="archiveQuery()">Yes, archive.</button>
-                      </div>
-                    </div>
+            <div class="modal fade" id="archive-confirmation-modal" tabindex="-1" role="dialog" aria-labelledby="archiveConfirmationModal" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h4 class="modal-title">Query Archive</h4>
+                  </div>
+                  <div class="modal-body">
+                    Are you sure you want to archive this query? <br/>
+                    All dashboard widgets created with its visualizations will be deleted.
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-primary" ng-click="archiveQuery()">Yes, archive.</button>
                   </div>
                 </div>
-            </p>
+              </div>
+            </div>
+          </p>
+          <hr />
+          <p>
+            <span class="glyphicon glyphicon-user"></span>
+            <span class="text-muted">Created By </span>
+            <strong>{{query.user.name}}</strong>
+          </p>
+          <p>
+              <span class="glyphicon glyphicon-hdd"></span>
+              <span class="text-muted">Data Source</span>
+              <select ng-disabled="!isQueryOwner" ng-model="query.data_source_id" ng-change="updateDataSource()" ng-options="ds.id as ds.name for ds in dataSources"></select>
+          </p>
+          <hr />
+          <p ng-if="query.last_modified_by && query.user.id != query.last_modified_by.id">
+              <span class="glyphicon glyphicon-user"></span>
+              <span class="text-muted">Last Modified By </span>
+              <strong>{{query.last_modified_by.name}}</strong>
+          </p>
+          <p>
+              <span class="glyphicon glyphicon-record"></span>
+              <span class="text-muted">Last Run </span>
+              <rd-time-ago value="queryResult.query_result.retrieved_at"></rd-time-ago>
+              in {{queryResult.getRuntime() | durationHumanize}}
+          </p>
+          <p>
+              <span class="glyphicon glyphicon-align-justify"></span>
+              <span class="text-muted">Rows </span><strong>{{queryResult.getData().length}}</strong>
+          </p>
+          <p>
+              <span class="glyphicon glyphicon-refresh"></span>
+              <span class="text-muted">Refresh Interval</span>
+              <query-refresh-select></query-refresh-select>
+          </p>
+          <p>
+              <a class="btn btn-primary btn-sm" ng-disabled="queryExecuting || !queryResult.getData()" query-result-link target="_self">
+                  <span class="glyphicon glyphicon-cloud-download"></span>
+                  <span class="rd-hidden-xs">Download Dataset</span>
+              </a>
           </p>
         </sidebar>
         <main>
@@ -106,21 +102,15 @@
           <editor ng-if="sourceMode">
             <p>
                 <button type="button" class="btn btn-primary btn-xs" ng-disabled="queryExecuting" ng-click="executeQuery()">
-                    <span class="glyphicon glyphicon-play"></span> Execute
+                    <span class="glyphicon glyphicon-play"></span> Run
+                </button>
+                <button class="btn btn-success btn-xs" ng-show="canEdit" ng-click="saveQuery()">
+                  <span class="glyphicon glyphicon-floppy-disk"> </span> Save<span ng-show="isDirty">&#42;</span>
                 </button>
                 <query-formatter></query-formatter>
-                <span class="pull-right">
-                    <button class="btn btn-xs btn-default rd-hidden-xs" ng-click="duplicateQuery()">
-                        <span class="glyphicon glyphicon-share-alt"></span> Fork
-                    </button>
-
-                    <button class="btn btn-success btn-xs" ng-show="canEdit" ng-click="saveQuery()">
-                        <span class="glyphicon glyphicon-floppy-disk"> </span> Save<span ng-show="isDirty">&#42;</span>
-                    </button>
-                </span>
             </p>
 
-            <query-editor query="query" lock="queryFormatting"></query-editor>
+            <query-editor query="query" schema="schema" lock="queryFormatting"></query-editor>
           </editor>
 
           <report>
@@ -145,7 +135,7 @@
                               <rd-tab tab-id="{{vis.id}}" name="{{vis.name}}" ng-if="vis.type!='TABLE'" ng-repeat="vis in query.visualizations">
                                   <span class="remove" ng-click="deleteVisualization($event, vis)" ng-show="canEdit"> &times;</span>
                               </rd-tab>
-                              <rd-tab tab-id="add" name="&plus; New" removeable="true" ng-show="canEdit"></rd-tab>
+                              <rd-tab tab-id="add" name="&plus; New Visualization" removeable="true" ng-show="canEdit"></rd-tab>
                               <li ng-if="!sourceMode" class="rd-tab-btn"><button class="btn btn-sm btn-default" ng-click="executeQuery()" ng-disabled="queryExecuting" title="Refresh Dataset"><span class="glyphicon glyphicon-refresh"></span></button></li>
                           </ul>
                       </div>
@@ -176,14 +166,21 @@
         </main>
       </div>
     </div>
-    <sidetoggle>
+    <sidetoggle data-open="{{ sidetoggle_open }}">
+      <button ng-click="sidetoggle_open = !sidetoggle_open">
+        <i class="glyphicon glyphicon-chevron-{{ sidetoggle_open ? 'right' : 'left' }}"></i>
+      </button>
       <schema>
         <input type="text" placeholder="Search schema..." class="form-control" ng-model="schemaFilter">
         <ul>
             <li ng-repeat="table in schema | filter:schemaFilter">
                 {{obj}}
-                <div class="tree-toggler"><i class="fa fa-table"></i> <strong>{{table.name}}</strong></div>
-                <div ng-repeat="column in table.columns | filter:schemaFilter" style="padding-left:16px;">{{column}}</div>
+                 <div class="table-name" ng-click="table.collapsed = !table.collapsed">
+                    <i class="fa fa-table"></i> <strong><span title="{{table.name}}">{{table.name}}</span></strong>
+                </div>
+                <div collapse="table.collapsed">
+                    <div ng-repeat="column in table.columns | filter:schemaFilter" style="padding-left:16px;">{{column}}</div>
+                </div>
             </li>
         </ul>
       </schema>
@@ -214,21 +211,46 @@
     padding: 0 1em;
   }
   sidetoggle {
-    background: #eee;
-    min-height: 0;
-    overflow-y: scroll;
-    padding: 1em;
+    background: #4D4D4D;
+    border-left: 1px solid #ccc;
+    transition: width 0.3s ease;
     width: 230px;
-    box-shadow: inset 3px 0 5px rgba(0,0,0,.2)
+    position: relative;
+    color: white;
+  }
+  sidetoggle:not([data-open="true"]) {
+    width: 20px;
+  }
+  sidetoggle button {
+    background: transparent;
+    border: none;
+    position: absolute;
+    height: 100%;
+    left: -4px;
+    outline: none;
+    color: #9e9e9e;
   }
   schema {
+    transition: opacity 0.3s linear;
+    position: absolute;
+    top: 1em;
+    bottom: 0;
+    right: 1em;
+    left: 1.6em;
   }
   schema ul {
     list-style: none;
     white-space: nowrap;
     padding: 0;
     cursor: crosshair;
-    margin-top: 10px
+    margin-top: 10px;
+    position: absolute;
+    top: 40px;
+    bottom: 0;
+    right: -1em;
+    left: 0;
+    overflow-y: scroll;
+    padding-right: 10px;
   }
   schema ul li > * {
     overflow-x: hidden;
@@ -243,6 +265,7 @@
   }
   report {
     flex: 1;
+    overflow: hidden;
   }
   editor {
     flex: 1;
