@@ -148,9 +148,8 @@
       Events.record(currentUser, "view", "visualization", $scope.widget.visualization.id);
 
       $scope.query = $scope.widget.getQuery();
-      var parameters = Query.collectParamsFromQueryString($location, $scope.query);
       var maxAge = $location.search()['maxAge'];
-      $scope.queryResult = $scope.query.getQueryResult(maxAge, parameters);
+      $scope.queryResult = $scope.query.getQueryResult(maxAge);
 
       $scope.type = 'visualization';
     } else {

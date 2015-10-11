@@ -405,7 +405,7 @@
     return QueryResult;
   };
 
-  var Query = function ($resource, QueryResult, DataSource) {
+  var Query = function ($resource, $location, QueryResult, DataSource) {
     var Query = $resource('/api/queries/:id', {id: '@id'},
       {
         search: {
@@ -428,21 +428,6 @@
       });
     };
 
-    Query.collectParamsFromQueryString = function($location, query) {
-      var parameterNames = query.getParameters();
-      var parameters = {};
-
-      var queryString = $location.search();
-      _.each(parameterNames, function(param, i) {
-        var qsName = "p_" + param;
-        if (qsName in queryString) {
-          parameters[param] = queryString[qsName];
-        }
-      });
-
-      return parameters;
-    };
-
     Query.prototype.getSourceLink = function () {
       return '/queries/' + this.id + '/source';
     };
@@ -460,16 +445,18 @@
       return moment.utc().hour(parts[0]).minute(parts[1]).local().format('HH:mm');
     };
 
-    Query.prototype.getQueryResult = function (maxAge, parameters) {
+    Query.prototype.getQueryResult = function (maxAge) {
       if (!this.query) {
         return;
       }
+
       var queryText = this.query;
 
-      var queryParameters = this.getParameters();
+      var queryParameters = this.getParametersFromQueryText();
       var paramsRequired = !_.isEmpty(queryParameters);
+      var parameters = _.object(_.pluck(this.getParameters(), 'name'), _.pluck(this.getParameters(), 'value'));
 
-      var missingParams = parameters === undefined ? queryParameters : _.difference(queryParameters, _.keys(parameters));
+      var missingParams = _.difference(queryParameters, _.keys(parameters));
 
       if (paramsRequired && missingParams.length > 0) {
         var paramsWord = "parameter";
@@ -477,7 +464,8 @@
           paramsWord = "parameters";
         }
 
-        return new QueryResult({job: {error: "Missing values for " + missingParams.join(', ')  + " "+paramsWord+".", status: 4}});
+        var message = "Missing values for " + missingParams.join(', ')  + " "+paramsWord+".";
+        return new QueryResultError(message);
       }
 
       if (paramsRequired) {
@@ -509,7 +497,7 @@
       return this.getQueryResult().toPromise();
     };
 
-    Query.prototype.getParameters = function() {
+    Query.prototype.getParametersFromQueryText = function() {
       var parts = Mustache.parse(this.query);
       var parameters = [];
       var collectParams = function(parts) {
@@ -527,7 +515,56 @@
       parameters = collectParams(parts);
 
       return parameters;
-    }
+    };
+
+    Query.prototype._getValuesFromQueryString = _.memoize(function() {
+      var values = {};
+
+      var queryString = $location.search();
+      _.each(queryString, function(v, k) {
+        console.log(v, k);
+        if (_.string.startsWith(k, 'p_')) {
+          values[k.substring(2)] = v;
+        }
+      });
+
+      return values;
+    });
+
+    Query.prototype.getParameters = function() {
+      var initialValues = this._getValuesFromQueryString();
+      var names = this.getParametersFromQueryText();
+      var currentNames = _.pluck(this.parameters, 'name');
+
+      if (_.isEmpty(_.difference(names, currentNames)) && _.isEmpty(_.difference(currentNames, names))) {
+        _.each(this.parameters, function(param) {
+          if (!param.$$initialized) {
+            param.$$initialized = true;
+            param.value = initialValues[param.name] || param.value;
+          }
+        });
+        return this.parameters;
+      }
+
+      var newParameters = _.map(names, function(name) {
+        var param = _.findWhere(this.parameters, {name: name});
+
+        if (!param) {
+          param = {
+            name: name,
+            defaultValue: undefined,
+            value: initialValues[name],
+            type: 'string',
+            options: {}
+          };
+        }
+        return param;
+      });
+
+      this.parameters = newParameters;
+
+      return this.parameters;
+    };
 
     return Query;
   };
@@ -622,7 +659,7 @@
 
   angular.module('redash.services')
       .factory('QueryResult', ['$resource', '$timeout', '$q', QueryResult])
-      .factory('Query', ['$resource', 'QueryResult', 'DataSource', Query])
+      .factory('Query', ['$resource', '$location', 'QueryResult', 'DataSource', Query])
       .factory('DataSource', ['$resource', DataSource])
       .factory('Alert', ['$resource', '$http', Alert])
       .factory('AlertSubscription', ['$resource', AlertSubscription])

@@ -17,6 +17,14 @@ from redash.query_runner import get_query_runner
 from utils import generate_token
 
 
+class JSONField(peewee.TextField):
+    def db_value(self, value):
+        return json.dumps(value)
+
+    def python_value(self, value):
+        return json.loads(value)
+
+
 class Database(object):
     def __init__(self):
         self.database_config = dict(settings.DATABASE_CONFIG)
@@ -318,14 +326,6 @@ class DataSource(BaseModel):
         return cls.select().order_by(cls.id.asc())
 
 
-class JSONField(peewee.TextField):
-    def db_value(self, value):
-        return json.dumps(value)
-
-    def python_value(self, value):
-        return json.loads(value)
-
-
 class QueryResult(BaseModel):
     id = peewee.PrimaryKeyField()
     data_source = peewee.ForeignKeyField(DataSource)
@@ -434,6 +434,7 @@ class Query(ModelTimestampsMixin, BaseModel):
     last_modified_by = peewee.ForeignKeyField(User, null=True, related_name="modified_queries")
     is_archived = peewee.BooleanField(default=False, index=True)
     schedule = peewee.CharField(max_length=10, null=True)
+    parameters = JSONField(default={})
 
     class Meta:
         db_table = 'queries'
@@ -449,6 +450,7 @@ class Query(ModelTimestampsMixin, BaseModel):
             'schedule': self.schedule,
             'api_key': self.api_key,
             'is_archived': self.is_archived,
+            'parameters': self.parameters,
             'updated_at': self.updated_at,
             'created_at': self.created_at,
             'data_source_id': self._data.get('data_source', None)

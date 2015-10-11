@@ -43,9 +43,13 @@ class PgModelConverter(CustomModelConverter):
     def __init__(self, view, additional=None):
         additional = {ArrayField: self.handle_array_field,
                       DateTimeTZField: self.handle_datetime_tz_field,
+                      models.JSONField: self.handle_json_field
                       }
         super(PgModelConverter, self).__init__(view, additional)
         self.view = view
+
+    def handle_json_field(self, model, field, **kwargs):
+        return field.name, JSONTextAreaField(**kwargs)
 
     def handle_array_field(self, model, field, **kwargs):
         return field.name, ArrayListField(**kwargs)
