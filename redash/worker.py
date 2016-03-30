@@ -1,9 +1,11 @@
+import sys
 from random import randint
 from celery import Celery
 from datetime import timedelta
 from celery.schedules import crontab
-from redash import settings, __version__
+from celery.signals import task_failure
 
+from redash import settings, __version__
 
 celery = Celery('redash',
                 broker=settings.CELERY_BROKER,
@@ -44,7 +46,25 @@ celery.conf.update(CELERY_RESULT_BACKEND=settings.CELERY_BACKEND,
 
 if settings.SENTRY_DSN:
     from raven import Client
-    from raven.contrib.celery import register_signal, register_logger_signal
+
+    def process_failure_signal(sender, task_id, args, kwargs, **kw):
+        exc_info = sys.exc_info()
+
+        # Use name to avoid importing QueryExecutionError (results in cyclic imports):
+        # TODO: move all custom exceptions into a separate module for this reason.
+        if exc_info[1].__class__.__name__ == 'QueryExecutionError':
+            return
+
+        # This signal is fired inside the stack so let raven do its magic
+        client.captureException(
+                extra={
+                    'task_id': task_id,
+                    'task': sender,
+                    'args': args,
+                    'kwargs': kwargs,
+                })
 
     client = Client(settings.SENTRY_DSN, release=__version__)
-    register_signal(client)
+    task_failure.connect(process_failure_signal, weak=False)
+
+
