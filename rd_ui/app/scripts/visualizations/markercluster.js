@@ -147,51 +147,22 @@
               enable: ['zoomstart', 'drag', 'click', 'mousemove', 'zoomlevelschange', 'baselayerchange'],
               logic: 'emit'
             }
-          },
-          tiles: {
-            url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          },
-          defaults: {
-            scrollWheelZoom: false
           }
         });
 
-
         var reloadOptions = function(oldValues, newValues, scope){
-
-          angular.extend($scope, {
-            visualization: newValues,
-            defaults: newValues.leaflet,
-          });
-
           if (angular.isDefined($scope.layers.overlays.markers.layerOptions)){
             angular.extend($scope.layers.overlays.markers.layerOptions, newValues.markercluster);
           }
 
-          if (angular.isDefined($scope.visualization)){
-            if (angular.isDefined($scope.visualization.leaflet)){
-              angular.extend($scope.center, $scope.visualization.leaflet.center);
-            }
+          if (angular.isDefined($scope.visualization) && angular.isDefined($scope.visualization.options.leaflet)) {
+            $scope.center = _.extend({}, {autoDiscover: true, zoom: 6}, $scope.visualization.options.leaflet.center);
+            $scope.tiles = _.extend({}, {url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}, $scope.visualization.options.leaflet.tiles);
+            $scope.defaults = $scope.visualization.options.leaflet;
           }
-
-          if (angular.isDefined($scope.visualization)){
-            if (angular.isDefined($scope.visualization.leaflet)){
-              angular.extend($scope.tiles, $scope.visualization.leaflet.tiles);
-            }
-          }
-
-          if (angular.isDefined($scope.visualization)){
-            if (angular.isDefined($scope.visualization.leaflet)){
-              angular.extend($scope.defaults, $scope.visualization.leaflet);
-            }
-          }
-
-
         };
 
-
         var reloadData = function(oldValues, newValues, scope){
-
           if (!angular.isDefined($scope.defaults)){
             reloadOptions();
           }
