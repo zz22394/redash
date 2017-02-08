@@ -390,6 +390,7 @@ class QueryExecutor(object):
             self.user = models.User.query.get(user_id)
         else:
             self.user = None
+        self.user = self.metadata.get('Username', 'unknown')
         self.query_hash = gen_query_hash(self.query)
         # Load existing tracker or create a new one if the job was created before code update:
         self.tracker = QueryTaskTracker.get_by_task_id(task.request.id) or QueryTaskTracker.create(task.request.id,
